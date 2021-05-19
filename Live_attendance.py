@@ -64,10 +64,12 @@ def mark_attendance(name,roll):
     year=time.asctime()[-4:]
     tim=time.asctime()[11:16]
     
+    # if csv of current date doesn't exist, make it
     if (date+'-'+month+'-'+year+'.csv')  not in os.listdir('Attendance/'):
         att = pd.DataFrame(columns=['Roll','Name','Time'])
         att.to_csv('Attendance/'+date+'-'+month+'-'+year+'.csv')
         
+    # here we are just selecting these 3 columns everytime and ignoring the index column    
     att = pd.DataFrame(pd.read_csv('Attendance/'+date+'-'+month+'-'+year+'.csv'))
     att = att[['Roll','Name','Time']]
     
@@ -76,6 +78,17 @@ def mark_attendance(name,roll):
     if name not in name_list:
         att1 = pd.DataFrame({'Name':[name], 'Roll':[roll], 'Time':[datetime.datetime.now().strftime("%H:%M:%S")]})
         att = att.append(att1,ignore_index=False)
+    
+    # if the user was already in the attendance list but if it comes again after 5 minute we will add it
+    else:
+        prev_time = att[att['Name']==name]['Time'].iloc[-1]
+        curr_time = datetime.datetime.now().time().strftime("%H:%M:%S")
+        #here we are just checking the time difference between previous timestamp and current time
+        print(datetime.datetime.strptime(curr_time, '%H:%M:%S') - datetime.datetime.strptime(prev_time, '%H:%M:%S'))
+        if datetime.datetime.strptime(curr_time, '%H:%M:%S') - datetime.datetime.strptime(prev_time, '%H:%M:%S') > datetime.timedelta(minutes=5):
+            att1 = pd.DataFrame({'Name':[name], 'Roll':[roll], 'Time':[datetime.datetime.now().strftime("%H:%M:%S")]})
+            att = att.append(att1,ignore_index=False)
+
         
     att.to_csv('Attendance/'+date+'-'+month+'-'+year+'.csv')
 
