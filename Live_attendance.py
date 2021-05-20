@@ -84,7 +84,6 @@ def mark_attendance(name,roll):
         prev_time = att[att['Name']==name]['Time'].iloc[-1]
         curr_time = datetime.datetime.now().time().strftime("%H:%M:%S")
         #here we are just checking the time difference between previous timestamp and current time
-        print(datetime.datetime.strptime(curr_time, '%H:%M:%S') - datetime.datetime.strptime(prev_time, '%H:%M:%S'))
         if datetime.datetime.strptime(curr_time, '%H:%M:%S') - datetime.datetime.strptime(prev_time, '%H:%M:%S') > datetime.timedelta(minutes=5):
             att1 = pd.DataFrame({'Name':[name], 'Roll':[roll], 'Time':[datetime.datetime.now().strftime("%H:%M:%S")]})
             att = att.append(att1,ignore_index=False)
