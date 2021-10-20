@@ -13,3 +13,5 @@ For adding some new face just run Add_new_face.py and enter your name and roll n
 For detections just run Live_Attendance.py  
  
 PS: Please don't compare this face recognition model with the HAAR-Cascade face detector.  
+
+Do visit my blog for better explanations: https://machinelearningprojects.net/face-recognition-based-attendance-system/
