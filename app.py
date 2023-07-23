@@ -19,10 +19,6 @@ datetoday2 = date.today().strftime("%d-%B-%Y")
 
 #### Initializing VideoCapture object to access WebCam
 face_detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-try:
-    cap = cv2.VideoCapture(1)
-except:
-    cap = cv2.VideoCapture(0)
 
 
 #### If these directories don't exist, create them
@@ -44,13 +40,16 @@ def totalreg():
 
 #### extract the face from an image
 def extract_faces(img):
-    if img!=[]:
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        face_points = face_detector.detectMultiScale(gray, 1.3, 5)
-        return face_points
-    else:
+    try:
+        if img.shape!=(0,0,0):
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            face_points = face_detector.detectMultiScale(gray, 1.3, 5)
+            return face_points
+        else:
+            return []
+    except:
         return []
-
+    
 #### Identify face using ML model
 def identify_face(facearray):
     model = joblib.load('static/face_recognition_model.pkl')
@@ -96,13 +95,34 @@ def add_attendance(name):
             f.write(f'\n{username},{userid},{current_time}')
 
 
+def getallusers():
+    userlist = os.listdir('static/faces')
+    names = []
+    rolls = []
+    l = len(userlist)
+
+    for i in userlist:
+        name,roll = i.split('_')
+        names.append(name)
+        rolls.append(roll)
+    
+    return userlist,names,rolls,l
+
+def deletefolder(duser):
+    pics = os.listdir(duser)
+    
+    for i in pics:
+        os.remove(duser+'/'+i)
+
+    os.rmdir(duser)
+
 ################## ROUTING FUNCTIONS #########################
 
 #### Our main page
 @app.route('/')
 def home():
     names,rolls,times,l = extract_attendance()    
-    return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2) 
+    return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2)  
 
 
 #### This function will run when we click on Take Attendance Button
@@ -111,11 +131,11 @@ def start():
     if 'face_recognition_model.pkl' not in os.listdir('static'):
         return render_template('home.html',totalreg=totalreg(),datetoday2=datetoday2,mess='There is no trained model in the static folder. Please add a new face to continue.') 
 
-    cap = cv2.VideoCapture(0)
     ret = True
+    cap = cv2.VideoCapture(0)
     while ret:
         ret,frame = cap.read()
-        if extract_faces(frame)!=():
+        if len(extract_faces(frame))>0:
             (x,y,w,h) = extract_faces(frame)[0]
             cv2.rectangle(frame,(x, y), (x+w, y+h), (255, 0, 20), 2)
             face = cv2.resize(frame[y:y+h,x:x+w], (50, 50))
@@ -139,8 +159,8 @@ def add():
     userimagefolder = 'static/faces/'+newusername+'_'+str(newuserid)
     if not os.path.isdir(userimagefolder):
         os.makedirs(userimagefolder)
-    cap = cv2.VideoCapture(0)
     i,j = 0,0
+    cap = cv2.VideoCapture(0)
     while 1:
         _,frame = cap.read()
         faces = extract_faces(frame)
