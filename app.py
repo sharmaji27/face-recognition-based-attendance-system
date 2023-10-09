@@ -95,21 +95,6 @@ def add_attendance(name):
             f.write(f'\n{username},{userid},{current_time}')
 
 
-## A function to get names and rol numbers of all users
-def getallusers():
-    userlist = os.listdir('static/faces')
-    names = []
-    rolls = []
-    l = len(userlist)
-
-    for i in userlist:
-        name, roll = i.split('_')
-        names.append(name)
-        rolls.append(roll)
-
-    return userlist, names, rolls, l
-
-
 
 ################## ROUTING FUNCTIONS #########################
 
