@@ -11,11 +11,11 @@ import joblib
 # Defining Flask App
 app = Flask(__name__)
 
-# Number of images to take for each user
 nimgs = 10
 
 # Saving Date today in 2 different formats
 datetoday = date.today().strftime("%m_%d_%y")
+datetoday2 = date.today().strftime("%d-%B-%Y")
 
 
 # Initializing VideoCapture object to access WebCam
@@ -41,12 +41,11 @@ def totalreg():
 
 # extract the face from an image
 def extract_faces(img):
-    if img != []:
+    try:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        face_points = face_detector.detectMultiScale(
-            gray, 1.2, 5, minSize=(20, 20))
+        face_points = face_detector.detectMultiScale(gray, 1.2, 5, minSize=(20, 20))
         return face_points
-    else:
+    except:
         return []
 
 
@@ -95,6 +94,30 @@ def add_attendance(name):
             f.write(f'\n{username},{userid},{current_time}')
 
 
+## A function to get names and rol numbers of all users
+def getallusers():
+    userlist = os.listdir('static/faces')
+    names = []
+    rolls = []
+    l = len(userlist)
+
+    for i in userlist:
+        name, roll = i.split('_')
+        names.append(name)
+        rolls.append(roll)
+
+    return userlist, names, rolls, l
+
+
+## A function to delete a user folder 
+def deletefolder(duser):
+    pics = os.listdir(duser)
+    for i in pics:
+        os.remove(duser+'/'+i)
+    os.rmdir(duser)
+
+
+
 
 ################## ROUTING FUNCTIONS #########################
 
@@ -102,15 +125,43 @@ def add_attendance(name):
 @app.route('/')
 def home():
     names, rolls, times, l = extract_attendance()
-    return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg())
+    return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2)
+
+
+## List users page
+@app.route('/listusers')
+def listusers():
+    userlist, names, rolls, l = getallusers()
+    return render_template('listusers.html', userlist=userlist, names=names, rolls=rolls, l=l, totalreg=totalreg(), datetoday2=datetoday2)
+
+
+## Delete functionality
+@app.route('/deleteuser', methods=['GET'])
+def deleteuser():
+    duser = request.args.get('user')
+    deletefolder('static/faces/'+duser)
+
+    ## if all the face are deleted, delete the trained file...
+    if os.listdir('static/faces/')==[]:
+        os.remove('static/face_recognition_model.pkl')
+    
+    try:
+        train_model()
+    except:
+        pass
+
+    userlist, names, rolls, l = getallusers()
+    return render_template('listusers.html', userlist=userlist, names=names, rolls=rolls, l=l, totalreg=totalreg(), datetoday2=datetoday2)
 
 
 # Our main Face Recognition functionality. 
 # This function will run when we click on Take Attendance Button.
 @app.route('/start', methods=['GET'])
 def start():
+    names, rolls, times, l = extract_attendance()
+
     if 'face_recognition_model.pkl' not in os.listdir('static'):
-        return render_template('home.html', totalreg=totalreg(), mess='There is no trained model in the static folder. Please add a new face to continue.')
+        return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess='There is no trained model in the static folder. Please add a new face to continue.')
 
     ret = True
     cap = cv2.VideoCapture(0)
@@ -131,7 +182,7 @@ def start():
     cap.release()
     cv2.destroyAllWindows()
     names, rolls, times, l = extract_attendance()
-    return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg())
+    return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2)
 
 
 # A function to add a new user.
@@ -167,7 +218,7 @@ def add():
     print('Training Model')
     train_model()
     names, rolls, times, l = extract_attendance()
-    return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg())
+    return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2)
 
 
 # Our main function which runs the Flask App
